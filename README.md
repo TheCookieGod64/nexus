@@ -39,6 +39,23 @@ Make **branded, scannable QR codes** — better than the online tools:
 ### 🎡 Wheel
 A spinning wheel of names with **sound effects, ticking, confetti, a winner popup & history**. Includes shuffle / sort / clear and a "remove winner after spin" mode.
 
+### 🎬 Video
+Load your own video (stays on your device) and:
+- 🎬 **Make GIF** — animated GIF with adjustable fps & width (built-in encoder, no libraries)
+- ✂️ **Trim → WebM** — cut a clip and download it
+- 🔇 **Extract Audio** — pull the audio out as a lossless WAV
+- 🖼️ **Grab Frames** — capture screenshots from the clip
+- Trim sliders, live preview & progress bar
+
+### 🗜️ Image
+Compress & resize images locally — max-width and quality sliders, output as **JPEG / WebP / PNG**, shows how much you saved.
+
+### 🎨 ASCII Art
+Turn any image into **colored ASCII art**. Multiple character sets, width control, invert option. Export as plain text, **ANSI color codes** (paste into a terminal!) or a **PNG**.
+
+### 📹 Recorder
+Record your **screen / window / tab** with optional microphone and system audio. Live timer, preview, and download as WebM.
+
 ---
 
 ## 🚀 Usage
@@ -50,17 +67,13 @@ Download `converter.html` (or `index.html`) and double-click it. Works fully off
 1. Create a new **public** repository and upload `index.html`.
 2. Go to **Settings → Pages**.
 3. Under *Branch*, pick **main** and **/(root)**, then **Save**.
-4. Your site goes live at:
-   ```
-   https://YOUR-USERNAME.github.io/REPO-NAME/
-   ```
-
+4. Your site goes live at: [https://YOUR-USERNAME.github.io/REPO-NAME/](https://YOUR-USERNAME.github.io/REPO-NAME/)
 ---
 
 ## ⌨️ Keyboard Shortcuts
 | Shortcut | Action |
 |---|---|
-| `Ctrl/Cmd + 1–5` | Switch tabs |
+| `Ctrl/Cmd + 1–9` | Switch tabs |
 | `Ctrl/Cmd + Enter` | Convert / Generate |
 | `Ctrl/Cmd + Shift + C` | Copy output |
 
@@ -82,4 +95,3 @@ Everything runs **locally in your browser**. Nothing is uploaded, nothing is tra
 © 2026 TheCookieGod64.
 Licensed under the **Apache License 2.0** — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
 Built with way too much fire 🔥🔪
-
