@@ -1,0 +1,22 @@
+NEXUS — The Text & QR Multitool
+Copyright 2026 TheCookieGod64
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license text.
+
+================================================================================
+This product bundles the following third-party software, each under its own
+license. These notices are retained as required by their respective licenses.
+================================================================================
+
+1) jsQR
+   A pure JavaScript QR code reading library.
+   Copyright (c) 2017 Cosmo Wolfe
+   Licensed under the Apache License, Version 2.0.
+   https://github.com/cozmo/jsQR
+
+2) qrcode-generator
+   QR Code Generator for JavaScript.
+   Copyright (c) 2009 Kazuhiko Arase
+   Licensed under the MIT License.
+   https://github.com/kazuhikoarase/qrcode-generator
