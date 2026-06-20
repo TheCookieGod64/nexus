@@ -14455,13 +14455,14 @@
         const fps=+document.getElementById('gifFps').value, ow=+document.getElementById('gifW').value;
         const oh=Math.round(ow*srcVideo.videoHeight/srcVideo.videoWidth);
         const cv=document.createElement('canvas');cv.width=ow;cv.height=oh;const ctx=cv.getContext('2d');
-        const dur=Math.max(0.1,e-s), total=Math.min(150,Math.round(dur*fps)), frames=[];
+        const dur=Math.max(0.1,e-s), total=Math.min(400,Math.round(dur*fps)), frames=[];
         document.getElementById('vidWarn').textContent="Rendering GIF...";srcVideo.pause();
         for(let i=0;i<total;i++){await seekTo(s+i*dur/total);ctx.drawImage(srcVideo,0,0,ow,oh);frames.push(ctx.getImageData(0,0,ow,oh).data);vidProg(i/total);}
         vidProg(-1);
-        const blob=buildGIF(frames,ow,oh,Math.round(100/fps));
+        const realDelayCs = Math.max(2, Math.round((dur / total) * 100));
+        const blob=buildGIF(frames,ow,oh,realDelayCs);
         const url=URL.createObjectURL(blob);
-        document.getElementById('vidOut').innerHTML=`<img src="${url}"><div class="statbar">${(blob.size/1048576).toFixed(2)} MB · ${total} frames</div>`;
+        document.getElementById('vidOut').innerHTML=`<img src="${url}"><div class="statbar">${(blob.size/1048576).toFixed(2)} MB · ${total} frames · synced at 1x real-time</div>`;
         document.getElementById('framesOut').innerHTML="";
         const a=document.createElement('a');a.className="btn primary";a.textContent="⬇ Download GIF";a.href=url;a.download="nexus-clip.gif";a.style.marginTop="8px";document.getElementById('vidOut').appendChild(a);
         document.getElementById('vidWarn').textContent="✔ GIF ready!";
@@ -15823,5 +15824,5 @@
 </script>
 
 
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ea103a9c2113d7',t:'MTc4MTk1MTA2Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0ea3abeaf18b75c',t:'MTc4MTk1MjgwMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
