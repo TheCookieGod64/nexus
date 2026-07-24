@@ -284,6 +284,7 @@
         <div class="tab" data-view="media">🖼️ Visual & Media</div>
         <div class="tab" data-view="net">🌐 Net & Dev</div>
         <div class="tab" data-view="tools">⚡ Time & Tools</div>
+        <div class="tab" data-view="retro">🕹️ RetroArch</div>
     </div>
 
     <!-- ============ VIEW: DATA & FILES ============ -->
@@ -1114,6 +1115,198 @@
             <div class="btns" style="justify-content:center">
                 <button class="btn primary" id="winSpinAgain">🎡 Spin Again</button>
                 <button class="btn" id="winClose">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ VIEW: RETROARCH (EmulatorJS / libretro cores in WASM) ============ -->
+    <div class="view" id="view-retro">
+        <style>
+            .retro-note{background:rgba(255,180,40,0.10);border:1px solid rgba(255,180,40,0.4);color:#ffd48a;
+                padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.5;margin-bottom:18px}
+            .retro-note b{color:#ffb428}
+            .retro-grid{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
+            .retro-field{display:flex;flex-direction:column;gap:6px}
+            .retro-field label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+            .retro-select,.retro-file{background:var(--panel);border:1px solid var(--line);color:var(--text);
+                border-radius:10px;padding:11px 14px;font-size:14px;font-family:inherit;min-width:220px}
+            .retro-select:focus{outline:none;border-color:var(--neon);box-shadow:0 0 12px rgba(0,240,255,0.25)}
+            .retro-file{min-width:280px;cursor:pointer}
+            .retro-file::file-selector-button{background:rgba(0,240,255,0.15);color:var(--neon);border:1px solid var(--line);
+                border-radius:8px;padding:7px 14px;margin-right:12px;cursor:pointer;font-family:inherit;font-weight:600}
+            .retro-btn{background:linear-gradient(90deg,var(--neon),var(--neon2));color:#04121a;font-weight:800;
+                border:none;border-radius:10px;padding:12px 26px;font-size:14px;letter-spacing:2px;text-transform:uppercase;
+                cursor:pointer;transition:transform .15s ease, box-shadow .15s ease}
+            .retro-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,240,255,0.35)}
+            .retro-btn:disabled{opacity:.45;cursor:not-allowed}
+            .retro-drop{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--dim);
+                margin-bottom:18px;transition:all .2s ease;cursor:pointer}
+            .retro-drop.hot{border-color:var(--neon);background:rgba(0,240,255,0.08);color:var(--neon)}
+            .retro-drop b{color:var(--text)}
+            #retroGameWrap{margin-top:6px}
+            #game{width:100%;max-width:900px;margin:0 auto;min-height:0}
+            .retro-sys-hint{font-size:12px;color:var(--dim);line-height:1.7;margin-top:6px}
+            .retro-sys-hint code{color:var(--neon);background:rgba(0,240,255,0.08);padding:1px 6px;border-radius:5px;font-size:11px}
+            .retro-status{font-size:13px;margin:10px 0;color:var(--dim);min-height:18px}
+            .retro-status.ok{color:var(--good)} .retro-status.err{color:var(--bad)}
+
+            /* ---- secondary controls row ---- */
+            .retro-ctrls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
+            .retro-mini-btn{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;
+                padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s ease}
+            .retro-mini-btn:hover:not(:disabled){border-color:var(--neon);color:var(--neon);box-shadow:0 0 12px rgba(0,240,255,0.2)}
+            .retro-mini-btn:disabled{opacity:.4;cursor:not-allowed}
+            .retro-mini-btn.on{border-color:var(--good);color:var(--good);box-shadow:0 0 12px rgba(35,255,160,0.2)}
+            .retro-toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);cursor:pointer;
+                background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 14px;user-select:none}
+            .retro-toggle input{accent-color:var(--neon);width:16px;height:16px;cursor:pointer}
+            .retro-toggle.active{color:var(--text);border-color:var(--neon)}
+
+            /* ---- controller status strip ---- */
+            .retro-pads{font-size:12px;color:var(--dim);background:rgba(0,240,255,0.05);border:1px solid var(--line);
+                border-radius:10px;padding:8px 14px;margin:0 0 14px;line-height:1.6;display:none}
+            .retro-pads.show{display:block}
+            .retro-pads b{color:var(--neon)}
+            .retro-pads .combined{color:var(--good);font-weight:700}
+            .retro-pad-debug{font-family:Consolas,monospace;font-size:11px;color:var(--dim);white-space:pre-wrap;
+                margin-top:6px;border-top:1px dashed var(--line);padding-top:6px;max-height:150px;overflow:auto}
+
+            /* ---- fullscreen game area ---- */
+            #retroGameWrap{position:relative}
+            #retroGameWrap:fullscreen{background:#000;display:flex;align-items:center;justify-content:center}
+            #retroGameWrap:fullscreen #game{max-width:100vw;width:100vw;height:100vh}
+            #retroGameWrap:-webkit-full-screen{background:#000}
+
+            /* ---- transparent touch controls (mobile) ---- */
+            .retro-touch{position:absolute;inset:0;z-index:50;pointer-events:none;display:none;
+                font-family:'Segoe UI',sans-serif;user-select:none;-webkit-user-select:none}
+            .retro-touch.show{display:block}
+            .retro-touch .tc{position:absolute;pointer-events:auto;display:flex;align-items:center;justify-content:center;
+                background:rgba(0,240,255,0.10);border:2px solid rgba(0,240,255,0.35);color:rgba(216,230,255,0.75);
+                border-radius:50%;font-weight:800;font-size:16px;touch-action:none;backdrop-filter:blur(1px);
+                opacity:.32;transition:opacity .08s ease, transform .08s ease;text-shadow:0 1px 3px #000}
+            .retro-touch .tc.pressed{opacity:.7;background:rgba(0,240,255,0.35);transform:scale(0.92)}
+            .retro-touch .tc-rect{border-radius:14px;font-size:13px;letter-spacing:1px}
+            /* sizes/positions tuned for landscape fullscreen; use vmin so they scale */
+            .retro-touch .tc-big{width:16vmin;height:16vmin}
+            .retro-touch .tc-dpad{width:13vmin;height:13vmin}
+            .retro-touch .tc-sm{width:9vmin;height:9vmin;font-size:11px}
+            /* D-pad cluster (left) */
+            .retro-touch .dpad-up{left:11vmin;top:calc(50% - 21vmin)}
+            .retro-touch .dpad-down{left:11vmin;top:calc(50% + 8vmin)}
+            .retro-touch .dpad-left{left:4.5vmin;top:calc(50% - 6.5vmin)}
+            .retro-touch .dpad-right{left:17.5vmin;top:calc(50% - 6.5vmin)}
+            /* Face buttons diamond (right) */
+            .retro-touch .btn-x{right:11vmin;top:calc(50% - 21vmin)}
+            .retro-touch .btn-b{right:11vmin;top:calc(50% + 8vmin)}
+            .retro-touch .btn-y{right:17.5vmin;top:calc(50% - 6.5vmin)}
+            .retro-touch .btn-a{right:4.5vmin;top:calc(50% - 6.5vmin)}
+            /* shoulders + start/select */
+            .retro-touch .sh-l{left:3vmin;top:3vmin;width:15vmin;height:7vmin}
+            .retro-touch .sh-r{right:3vmin;top:3vmin;width:15vmin;height:7vmin}
+            .retro-touch .sys-select{left:38vmin;bottom:4vmin;width:13vmin;height:6vmin}
+            .retro-touch .sys-start{right:38vmin;bottom:4vmin;width:13vmin;height:6vmin}
+            @media (max-aspect-ratio: 1/1){ /* portrait: pull clusters inward */
+                .retro-touch .dpad-left{left:2vmin} .retro-touch .dpad-right{left:15vmin}
+                .retro-touch .btn-a{right:2vmin} .retro-touch .btn-y{right:15vmin}
+            }
+        </style>
+
+        <div class="tool-section" id="tool-retro">
+            <div class="section-banner"><span class="icon">🕹️</span> RetroArch — Browser Emulator <span style="font-size:12px;font-weight:600;letter-spacing:1px;color:var(--dim);margin-left:auto">powered by EmulatorJS · libretro cores (WASM)</span></div>
+
+            <div class="retro-note">
+                ⚠️ <b>Heads up:</b> Emulator cores are streamed from <b>cdn.emulatorjs.org</b> the first time you boot each
+                system (needs internet once, then your browser caches them). <b>Your ROM files never leave this device</b> —
+                emulation runs 100% locally in WebAssembly. Only load games you legally own. This is the one NEXUS tab that
+                phones home for cores; everything else stays fully offline. 🔪
+            </div>
+
+            <div class="retro-grid">
+                <div class="retro-field">
+                    <label for="retroSystem">System / Core</label>
+                    <select id="retroSystem" class="retro-select">
+                        <option value="auto">🔍 Auto-detect from file</option>
+                        <option value="nes">Nintendo NES / Famicom</option>
+                        <option value="snes">Super Nintendo (SNES)</option>
+                        <option value="gb">Game Boy (GB)</option>
+                        <option value="gba">Game Boy Advance (GBA)</option>
+                        <option value="nds">Nintendo DS</option>
+                        <option value="n64">Nintendo 64</option>
+                        <option value="vb">Virtual Boy</option>
+                        <option value="segaMD">Sega Genesis / Mega Drive</option>
+                        <option value="segaMS">Sega Master System</option>
+                        <option value="segaGG">Sega Game Gear</option>
+                        <option value="segaCD">Sega CD</option>
+                        <option value="segaSaturn">Sega Saturn</option>
+                        <option value="pce">PC Engine / TurboGrafx-16</option>
+                        <option value="psx">Sony PlayStation</option>
+                        <option value="atari2600">Atari 2600</option>
+                        <option value="atari7800">Atari 7800</option>
+                        <option value="lynx">Atari Lynx</option>
+                        <option value="ngp">Neo Geo Pocket</option>
+                        <option value="ws">WonderSwan</option>
+                        <option value="coleco">ColecoVision</option>
+                        <option value="arcade">Arcade (FBNeo / MAME)</option>
+                    </select>
+                </div>
+                <div class="retro-field">
+                    <label for="retroRom">ROM / Disc Image</label>
+                    <input type="file" id="retroRom" class="retro-file"
+                        accept=".nes,.fds,.smc,.sfc,.fig,.gb,.gbc,.gba,.nds,.n64,.z64,.v64,.vb,.md,.gen,.smd,.sms,.gg,.pce,.bin,.cue,.iso,.chd,.pbp,.img,.a26,.a78,.lnx,.ngp,.ngc,.ws,.wsc,.col,.zip,.7z">
+                </div>
+                <button id="retroLoadBtn" class="retro-btn" disabled>▶ Insert Cartridge</button>
+            </div>
+
+            <div class="retro-ctrls">
+                <button id="retroFullscreenBtn" class="retro-mini-btn" disabled title="Play in fullscreen">⛶ Fullscreen</button>
+                <button id="retroTouchBtn" class="retro-mini-btn" title="Show/hide on-screen touch controls">📱 Touch Controls</button>
+                <label class="retro-toggle active" id="retroCombineLbl" title="Merge a left + right Joy-Con into one controller">
+                    <input type="checkbox" id="retroCombine" checked> 🔗 Combine Joy-Cons
+                </label>
+                <label class="retro-toggle" id="retroDbgLbl" title="Show live gamepad button/axis readout">
+                    <input type="checkbox" id="retroDbg"> 🛠 Controller debug
+                </label>
+            </div>
+
+            <div class="retro-pads" id="retroPads"></div>
+
+            <div class="retro-drop" id="retroDrop">
+                🎮 <b>Drag &amp; drop a ROM here</b> — or use the file picker above.<br>
+                <span style="font-size:12px">Supports zipped ROMs too. System is auto-detected from the extension.</span>
+            </div>
+
+            <div class="retro-status" id="retroStatus"></div>
+
+            <div id="retroGameWrap">
+                <div id="game"></div>
+                <div id="retroTouch" class="retro-touch" aria-hidden="true">
+                    <div class="tc tc-dpad dpad-up"    data-key="ArrowUp">▲</div>
+                    <div class="tc tc-dpad dpad-down"  data-key="ArrowDown">▼</div>
+                    <div class="tc tc-dpad dpad-left"  data-key="ArrowLeft">◀</div>
+                    <div class="tc tc-dpad dpad-right" data-key="ArrowRight">▶</div>
+                    <div class="tc tc-big btn-y" data-key="s">Y</div>
+                    <div class="tc tc-big btn-x" data-key="a">X</div>
+                    <div class="tc tc-big btn-b" data-key="x">B</div>
+                    <div class="tc tc-big btn-a" data-key="z">A</div>
+                    <div class="tc tc-rect sh-l" data-key="q">L</div>
+                    <div class="tc tc-rect sh-r" data-key="w">R</div>
+                    <div class="tc tc-rect sys-select" data-key="v">SELECT</div>
+                    <div class="tc tc-rect sys-start"  data-key="Enter">START</div>
+                </div>
+            </div>
+
+            <div class="retro-sys-hint">
+                🕹️ <b>Controls:</b> EmulatorJS shows its own on-screen menu (bottom bar) for <b>save states, load states,
+                fast-forward</b> and more. Use NEXUS's <b>⛶ Fullscreen</b> button above for distraction-free play.<br>
+                ⌨️ <b>Keyboard defaults:</b> <code>Arrows</code> = D-pad · <code>Z</code> = A · <code>X</code> = B · <code>A</code> = X · <code>S</code> = Y · <code>Q</code> = L · <code>W</code> = R · <code>Enter</code> = Start · <code>V</code> = Select.<br>
+                🔗 <b>Joy-Cons:</b> Pair a left <i>and</i> right Switch Joy-Con to this device over Bluetooth — NEXUS
+                <b>automatically fuses them into one controller</b> (no more fiddly manual pairing). Toggle it off anytime above.<br>
+                📱 <b>Mobile:</b> On phones/tablets, <b>transparent touch controls</b> appear automatically in fullscreen
+                (D-pad left, A/B/X/Y right, L/R shoulders, Start/Select). Toggle them with the 📱 button.<br>
+                📁 <b>Auto-detect:</b> <code>.nes</code> NES · <code>.sfc/.smc</code> SNES · <code>.gb/.gbc</code> GB · <code>.gba</code> GBA ·
+                <code>.nds</code> DS · <code>.z64/.n64</code> N64 · <code>.md/.gen</code> Genesis · <code>.pce</code> TurboGrafx ·
+                <code>.bin/.cue/.chd</code> PlayStation · <code>.zip</code> Arcade.
             </div>
         </div>
     </div>
@@ -14246,7 +14439,7 @@
     document.addEventListener('keydown',e=>{
         if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){const active=document.querySelector('.tab.active')?.dataset.view;if(active==='data')convert();else if(active==='qr')document.getElementById('genBtn')?.click();e.preventDefault();}
         if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='c'){const active=document.querySelector('.tab.active')?.dataset.view;if(active==='data')document.getElementById('copyBtn')?.click();e.preventDefault();}
-        if((e.ctrlKey||e.metaKey)&&e.key>='1'&&e.key<='6'){const tabs=document.querySelectorAll('.tab');const i=+e.key-1;if(tabs[i]){tabs[i].click();e.preventDefault();}}
+        if((e.ctrlKey||e.metaKey)&&e.key>='1'&&e.key<='7'){const tabs=document.querySelectorAll('.tab');const i=+e.key-1;if(tabs[i]){tabs[i].click();e.preventDefault();}}
         if(e.altKey && !e.ctrlKey && !e.metaKey && e.key>='1' && e.key<='9'){const activeView=document.querySelector('.view.active');if(activeView){const subTabs=activeView.querySelectorAll('.sub-tab');const subIndex=+e.key-1;if(subTabs[subIndex]){subTabs[subIndex].click();e.preventDefault();}}}
     });
 
@@ -15866,6 +16059,335 @@
         };
         reader.readAsText(file);
     };
+
+    /* ===================== 🕹️ RETROARCH / EMULATORJS ===================== */
+    (function(){
+        const sysSel   = document.getElementById('retroSystem');
+        const romInput = document.getElementById('retroRom');
+        const loadBtn  = document.getElementById('retroLoadBtn');
+        const drop     = document.getElementById('retroDrop');
+        const status   = document.getElementById('retroStatus');
+        const gameWrap = document.getElementById('retroGameWrap');
+        if(!sysSel || !romInput || !loadBtn) return;
+
+        // extra controls
+        const fsBtn      = document.getElementById('retroFullscreenBtn');
+        const touchBtn   = document.getElementById('retroTouchBtn');
+        const touchLayer = document.getElementById('retroTouch');
+        const combineChk = document.getElementById('retroCombine');
+        const combineLbl = document.getElementById('retroCombineLbl');
+        const dbgChk     = document.getElementById('retroDbg');
+        const dbgLbl     = document.getElementById('retroDbgLbl');
+        const padsBox    = document.getElementById('retroPads');
+
+        // device / state
+        const isTouchDevice = (window.matchMedia && window.matchMedia('(pointer:coarse)').matches) || ('ontouchstart' in window);
+        let touchEnabled = isTouchDevice;   // auto-on for phones/tablets
+        let isFullscreen = false;
+
+        let pendingFile = null;
+        let booted = false;
+
+        // extension -> EmulatorJS core (libretro)
+        const EXT_CORE = {
+            nes:'nes', fds:'nes', unf:'nes',
+            smc:'snes', sfc:'snes', fig:'snes', swc:'snes', bs:'snes',
+            gb:'gb', dmg:'gb', gbc:'gb', sgb:'gb',
+            gba:'gba',
+            nds:'nds', dsi:'nds',
+            n64:'n64', z64:'n64', v64:'n64',
+            vb:'vb',
+            md:'segaMD', gen:'segaMD', smd:'segaMD', '32x':'segaMD',
+            sms:'segaMS', gg:'segaGG',
+            pce:'pce',
+            a26:'atari2600', a78:'atari7800', lnx:'lynx',
+            ngp:'ngp', ngc:'ngp',
+            ws:'ws', wsc:'ws',
+            col:'coleco',
+            // disc / single-file images
+            chd:'psx', pbp:'psx', ecm:'psx',
+            zip:'arcade', '7z':'arcade'
+        };
+        // ambiguous ones that depend on chosen system
+        const AMBIG = new Set(['bin','cue','iso','img']);
+
+        function ext(name){ return (name.split('.').pop()||'').toLowerCase(); }
+
+        function detectCore(file){
+            const manual = sysSel.value;
+            if(manual && manual !== 'auto') return manual;
+            const e = ext(file.name);
+            if(EXT_CORE[e]) return EXT_CORE[e];
+            if(AMBIG.has(e)) return null; // needs manual pick
+            return null;
+        }
+
+        function setStatus(msg, kind){
+            status.textContent = msg || '';
+            status.className = 'retro-status' + (kind ? ' '+kind : '');
+        }
+
+        function onFilePicked(file){
+            if(!file) return;
+            pendingFile = file;
+            romInput.files && (romInput.value !== undefined);
+            const pretty = file.name + '  ·  ' + (file.size/1048576).toFixed(2) + ' MB';
+            drop.innerHTML = '🎮 <b>' + pretty + '</b><br><span style="font-size:12px">Ready — pick a system (or leave on Auto-detect) and hit Insert Cartridge.</span>';
+            loadBtn.disabled = false;
+            const core = detectCore(file);
+            if(core){
+                setStatus('Detected core: ' + core.toUpperCase() + ' — press Insert Cartridge to boot.', 'ok');
+            } else {
+                setStatus('Could not auto-detect the system for ".'+ext(file.name)+'" — choose one from the dropdown.', 'err');
+            }
+        }
+
+        romInput.addEventListener('change', e => onFilePicked(e.target.files[0]));
+
+        // drag & drop
+        ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e=>{
+            e.preventDefault(); e.stopPropagation(); drop.classList.add('hot');
+        }));
+        ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e=>{
+            e.preventDefault(); e.stopPropagation(); drop.classList.remove('hot');
+        }));
+        drop.addEventListener('drop', e => {
+            const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if(f) onFilePicked(f);
+        });
+        drop.addEventListener('click', () => romInput.click());
+
+        function cleanup(){
+            // remove previously injected loader scripts
+            document.querySelectorAll('script[data-retro-loader]').forEach(s => s.remove());
+            // recreate ONLY the #game container (keep the touch overlay inside gameWrap intact)
+            const oldGame = document.getElementById('game');
+            if(oldGame) oldGame.remove();
+            const freshGame = document.createElement('div');
+            freshGame.id = 'game';
+            gameWrap.insertBefore(freshGame, gameWrap.firstChild);
+            // clear stale EmulatorJS globals
+            ['EJS_emulator','EJS_core','EJS_gameUrl','EJS_gameName','EJS_player',
+             'EJS_pathtodata','EJS_startOnLoaded','EJS_ready','EJS_onGameStart',
+             'EJS_terminateOnExit','EJS_gameID','EJS_language','EJS_Buttons',
+             'EJS_defaultControls','EJS_loadStateURL','EJS_cheats','EJS_gamePatchUrl',
+             'EJS_onLoadState','EJS_onSaveState'].forEach(k => { try{ delete window[k]; }catch(_){ window[k]=undefined; } });
+        }
+
+        loadBtn.addEventListener('click', () => {
+            if(!pendingFile){ setStatus('Pick a ROM file first.', 'err'); return; }
+            const core = detectCore(pendingFile);
+            if(!core){
+                setStatus('Choose the correct system from the dropdown for ".'+ext(pendingFile.name)+'" files, then try again.', 'err');
+                return;
+            }
+
+            // tear down any previous session
+            cleanup();
+
+            const blobUrl = URL.createObjectURL(pendingFile);
+
+            // EmulatorJS reads these globals when loader.js executes
+            window.EJS_player        = '#game';
+            window.EJS_core          = core;
+            window.EJS_gameUrl       = blobUrl;
+            window.EJS_gameName      = pendingFile.name;
+            window.EJS_pathtodata    = 'https://cdn.emulatorjs.org/stable/data/';
+            window.EJS_startOnLoaded = true;
+            window.EJS_terminateOnExit = false;
+            window.EJS_language      = 'en-US';
+
+            setStatus('⏳ Booting ' + core.toUpperCase() + ' core for "' + pendingFile.name + '" … (first boot of a system downloads the core)', '');
+
+            const s = document.createElement('script');
+            s.src = 'https://cdn.emulatorjs.org/stable/data/loader.js' + (booted ? ('?v='+Date.now()) : '');
+            s.dataset.retroLoader = '1';
+            s.onload  = () => { booted = true; if(fsBtn) fsBtn.disabled = false; updateTouchVisibility(); setStatus('✔ Running ' + core.toUpperCase() + '. Hit ⛶ Fullscreen to play — Joy-Con combining & touch controls are armed.', 'ok'); };
+            s.onerror = () => setStatus('✖ Failed to load the emulator core. Check your internet connection (cores come from cdn.emulatorjs.org).', 'err');
+            document.body.appendChild(s);
+        });
+
+        /* ================== 🎮 JOY-CON AUTO-COMBINER ================== */
+        // The browser exposes each Switch Joy-Con as a SEPARATE gamepad, which
+        // emulators treat as two players. We override the (read-only) Gamepad API
+        // so that when a Left + Right Joy-Con are both present, EmulatorJS instead
+        // sees ONE fused "standard" controller. No manual pairing nightmare. 🔗
+        const NATIVE_GETGAMEPADS = (navigator.getGamepads ? navigator.getGamepads.bind(navigator) : function(){ return []; });
+
+        function isJoyCon(gp, side){
+            if(!gp || !gp.id) return false;
+            const id = gp.id.toLowerCase();
+            if(id.indexOf('joy-con') === -1 && id.indexOf('joycon') === -1) return false;
+            return id.indexOf('('+side+')') !== -1 || id.indexOf(' '+side) !== -1 || id.indexOf(side+' ') !== -1 || id.indexOf(side+'-') !== -1;
+        }
+
+        function mergeJoyCons(L, R){
+            const n = Math.max(L.buttons.length, R.buttons.length, 17);
+            const buttons = [];
+            for(let i=0;i<n;i++){
+                const lb = L.buttons[i], rb = R.buttons[i];
+                buttons.push({
+                    pressed: !!((lb && lb.pressed) || (rb && rb.pressed)),
+                    touched: !!((lb && lb.touched) || (rb && rb.touched)),
+                    value:   Math.max(lb ? lb.value : 0, rb ? rb.value : 0)
+                });
+            }
+            const axes = [
+                L.axes[0] || 0, L.axes[1] || 0,   // left analog stick  <- Joy-Con (L)
+                R.axes[0] || 0, R.axes[1] || 0    // right analog stick <- Joy-Con (R)
+            ];
+            return {
+                id: 'NEXUS Combined Joy-Con (L+R)',
+                index: Math.min(L.index, R.index),
+                connected: true,
+                mapping: 'standard',
+                timestamp: Math.max(L.timestamp || 0, R.timestamp || 0),
+                buttons: buttons,
+                axes: axes,
+                vibrationActuator: (L.vibrationActuator || R.vibrationActuator || null),
+                hapticActuators: []
+            };
+        }
+
+        try{
+            navigator.getGamepads = function(){
+                const pads = Array.prototype.slice.call(NATIVE_GETGAMEPADS());
+                if(!(combineChk && combineChk.checked)) return pads;
+                const L = pads.find(function(p){ return isJoyCon(p,'l'); });
+                const R = pads.find(function(p){ return isJoyCon(p,'r'); });
+                if(L && R){
+                    const merged = mergeJoyCons(L, R);
+                    const rest = pads.filter(function(p){ return p && !(isJoyCon(p,'l') || isJoyCon(p,'r')); });
+                    rest.unshift(merged);                 // combined pad becomes player 1
+                    while(rest.length < pads.length) rest.push(null);
+                    return rest;
+                }
+                return pads;                              // single Joy-Con / other pads pass through
+            };
+        }catch(e){ /* if the browser locks the API, combining just won't apply */ }
+
+        function rawPads(){ return Array.prototype.slice.call(NATIVE_GETGAMEPADS()).filter(Boolean); }
+
+        function refreshPadStatus(){
+            if(!padsBox) return;
+            const pads = rawPads();
+            const showBox = pads.length > 0 || (dbgChk && dbgChk.checked);
+            padsBox.classList.toggle('show', showBox);
+            if(pads.length === 0){
+                padsBox.innerHTML = '🎮 <b>No controllers detected.</b> Connect a gamepad — or pair a left <i>and</i> right Joy-Con over Bluetooth — then press any button to wake it.'
+                    + (dbgChk && dbgChk.checked ? '<div class="retro-pad-debug" id="retroPadDebug"></div>' : '');
+                return;
+            }
+            const L = pads.find(function(p){ return isJoyCon(p,'l'); });
+            const R = pads.find(function(p){ return isJoyCon(p,'r'); });
+            let html = '🎮 <b>' + pads.length + ' controller' + (pads.length>1?'s':'') + ':</b> '
+                     + pads.map(function(p){ return p.id; }).join(' &nbsp;·&nbsp; ');
+            if(L && R){
+                html += (combineChk && combineChk.checked)
+                    ? '<br><span class="combined">🔗 Joy-Con (L) + (R) auto-combined into ONE controller (player 1). No manual pairing needed.</span>'
+                    : '<br><span style="color:var(--bad)">⚠ Two Joy-Cons found, but combining is OFF — they will act as 2 separate pads.</span>';
+            } else if(L || R){
+                html += '<br><span style="color:#ffd48a">ℹ One Joy-Con (' + (L?'Left':'Right') + ') detected. Connect the other half to auto-fuse a full controller.</span>';
+            }
+            if(dbgChk && dbgChk.checked) html += '<div class="retro-pad-debug" id="retroPadDebug"></div>';
+            padsBox.innerHTML = html;
+        }
+
+        function refreshPadDebug(){
+            const el = document.getElementById('retroPadDebug');
+            if(!el) return;
+            el.textContent = rawPads().map(function(p){
+                const pressed = [];
+                p.buttons.forEach(function(b,i){ if(b && b.pressed) pressed.push(i); });
+                return p.id + '\n  pressed buttons: [' + pressed.join(', ') + ']   axes: [' + p.axes.map(function(a){ return a.toFixed(2); }).join(', ') + ']';
+            }).join('\n\n');
+        }
+
+        window.addEventListener('gamepadconnected', function(e){
+            refreshPadStatus();
+            setStatus('🎮 Controller connected: ' + e.gamepad.id + ((isJoyCon(e.gamepad,'l')||isJoyCon(e.gamepad,'r')) ? ' — Joy-Con detected' : ''), 'ok');
+        });
+        window.addEventListener('gamepaddisconnected', function(){ refreshPadStatus(); });
+        if(combineChk) combineChk.addEventListener('change', function(){
+            combineLbl.classList.toggle('active', combineChk.checked);
+            refreshPadStatus();
+        });
+        if(dbgChk) dbgChk.addEventListener('change', function(){
+            dbgLbl.classList.toggle('active', dbgChk.checked);
+            refreshPadStatus();
+        });
+        // gamepad state only updates while polled — drive the debug readout
+        setInterval(function(){ if(dbgChk && dbgChk.checked) refreshPadDebug(); }, 100);
+        refreshPadStatus();
+
+        /* ======================= ⛶ FULLSCREEN ======================== */
+        function fsElement(){ return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null; }
+        function enterFullscreen(){
+            const req = gameWrap.requestFullscreen || gameWrap.webkitRequestFullscreen || gameWrap.msRequestFullscreen;
+            if(req){ try{ req.call(gameWrap); }catch(e){} }
+        }
+        function exitFullscreen(){
+            const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+            if(fsElement() && exit){ try{ exit.call(document); }catch(e){} }
+        }
+        function onFsChange(){
+            isFullscreen = !!fsElement();
+            if(fsBtn) fsBtn.textContent = isFullscreen ? '🡐 Exit Fullscreen' : '⛶ Fullscreen';
+            updateTouchVisibility();
+        }
+        document.addEventListener('fullscreenchange', onFsChange);
+        document.addEventListener('webkitfullscreenchange', onFsChange);
+        if(fsBtn) fsBtn.addEventListener('click', function(){
+            if(!booted){ setStatus('Load a ROM first, then go fullscreen.', 'err'); return; }
+            if(isFullscreen) exitFullscreen(); else enterFullscreen();
+        });
+
+        /* ============= 📱 TRANSPARENT TOUCH CONTROLS ================ */
+        function updateTouchVisibility(){
+            if(!touchLayer) return;
+            // Visible when touch is enabled + a game is running + (we're fullscreen
+            // OR a desktop user manually switched touch controls on for testing).
+            const visible = touchEnabled && booted && (isFullscreen || !isTouchDevice);
+            touchLayer.classList.toggle('show', visible);
+            if(touchBtn) touchBtn.classList.toggle('on', touchEnabled);
+        }
+        if(touchBtn) touchBtn.addEventListener('click', function(){
+            touchEnabled = !touchEnabled;
+            updateTouchVisibility();
+            setStatus('📱 Touch controls ' + (touchEnabled ? 'ON — go fullscreen to play with them.' : 'OFF.'), touchEnabled ? 'ok' : '');
+        });
+
+        // EmulatorJS reads the keyboard, so we dispatch synthetic key events using
+        // its default bindings (A=z B=x X=a Y=s L=q R=w Start=Enter Select=v D-pad=arrows).
+        function synthKey(type, key){
+            try{
+                document.dispatchEvent(new KeyboardEvent(type, { key:key, code:key, bubbles:true, cancelable:true }));
+                const cv = gameWrap.querySelector('canvas');
+                if(cv) cv.dispatchEvent(new KeyboardEvent(type, { key:key, code:key, bubbles:true, cancelable:true }));
+            }catch(e){}
+        }
+        if(touchLayer){
+            const HAS_POINTER = ('PointerEvent' in window);
+            touchLayer.querySelectorAll('.tc').forEach(function(btn){
+                const key = btn.getAttribute('data-key');
+                function down(e){ if(e && e.cancelable) e.preventDefault(); if(btn.classList.contains('pressed')) return; btn.classList.add('pressed'); synthKey('keydown', key); }
+                function up(e){ if(e && e.cancelable) e.preventDefault(); if(!btn.classList.contains('pressed')) return; btn.classList.remove('pressed'); synthKey('keyup', key); }
+                if(HAS_POINTER){
+                    btn.addEventListener('pointerdown', function(e){ try{ btn.setPointerCapture(e.pointerId); }catch(_){} down(e); });
+                    btn.addEventListener('pointerup', up);
+                    btn.addEventListener('pointercancel', up);
+                    btn.addEventListener('lostpointercapture', up);
+                } else {
+                    btn.addEventListener('touchstart', function(e){ if(e.cancelable) e.preventDefault(); down(e); }, {passive:false});
+                    btn.addEventListener('touchend',   function(e){ if(e.cancelable) e.preventDefault(); up(e);   }, {passive:false});
+                    btn.addEventListener('touchcancel',function(e){ up(e); }, {passive:false});
+                }
+            });
+            touchLayer.addEventListener('touchmove', function(e){ e.preventDefault(); }, {passive:false});
+        }
+        updateTouchVisibility();
+    })();
+    /* =================== END RETROARCH / EMULATORJS ===================== */
 
 </script>
 
