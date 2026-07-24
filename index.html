@@ -284,6 +284,7 @@
         <div class="tab" data-view="media">🖼️ Visual & Media</div>
         <div class="tab" data-view="net">🌐 Net & Dev</div>
         <div class="tab" data-view="tools">⚡ Time & Tools</div>
+        <div class="tab" data-view="retro">🕹️ RetroArch</div>
     </div>
 
     <!-- ============ VIEW: DATA & FILES ============ -->
@@ -1114,6 +1115,104 @@
             <div class="btns" style="justify-content:center">
                 <button class="btn primary" id="winSpinAgain">🎡 Spin Again</button>
                 <button class="btn" id="winClose">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ VIEW: RETROARCH (EmulatorJS / libretro cores in WASM) ============ -->
+    <div class="view" id="view-retro">
+        <style>
+            .retro-note{background:rgba(255,180,40,0.10);border:1px solid rgba(255,180,40,0.4);color:#ffd48a;
+                padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.5;margin-bottom:18px}
+            .retro-note b{color:#ffb428}
+            .retro-grid{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
+            .retro-field{display:flex;flex-direction:column;gap:6px}
+            .retro-field label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+            .retro-select,.retro-file{background:var(--panel);border:1px solid var(--line);color:var(--text);
+                border-radius:10px;padding:11px 14px;font-size:14px;font-family:inherit;min-width:220px}
+            .retro-select:focus{outline:none;border-color:var(--neon);box-shadow:0 0 12px rgba(0,240,255,0.25)}
+            .retro-file{min-width:280px;cursor:pointer}
+            .retro-file::file-selector-button{background:rgba(0,240,255,0.15);color:var(--neon);border:1px solid var(--line);
+                border-radius:8px;padding:7px 14px;margin-right:12px;cursor:pointer;font-family:inherit;font-weight:600}
+            .retro-btn{background:linear-gradient(90deg,var(--neon),var(--neon2));color:#04121a;font-weight:800;
+                border:none;border-radius:10px;padding:12px 26px;font-size:14px;letter-spacing:2px;text-transform:uppercase;
+                cursor:pointer;transition:transform .15s ease, box-shadow .15s ease}
+            .retro-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,240,255,0.35)}
+            .retro-btn:disabled{opacity:.45;cursor:not-allowed}
+            .retro-drop{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--dim);
+                margin-bottom:18px;transition:all .2s ease;cursor:pointer}
+            .retro-drop.hot{border-color:var(--neon);background:rgba(0,240,255,0.08);color:var(--neon)}
+            .retro-drop b{color:var(--text)}
+            #retroGameWrap{margin-top:6px}
+            #game{width:100%;max-width:900px;margin:0 auto;min-height:0}
+            .retro-sys-hint{font-size:12px;color:var(--dim);line-height:1.7;margin-top:6px}
+            .retro-sys-hint code{color:var(--neon);background:rgba(0,240,255,0.08);padding:1px 6px;border-radius:5px;font-size:11px}
+            .retro-status{font-size:13px;margin:10px 0;color:var(--dim);min-height:18px}
+            .retro-status.ok{color:var(--good)} .retro-status.err{color:var(--bad)}
+        </style>
+
+        <div class="tool-section" id="tool-retro">
+            <div class="section-banner"><span class="icon">🕹️</span> RetroArch — Browser Emulator <span style="font-size:12px;font-weight:600;letter-spacing:1px;color:var(--dim);margin-left:auto">powered by EmulatorJS · libretro cores (WASM)</span></div>
+
+            <div class="retro-note">
+                ⚠️ <b>Heads up:</b> Emulator cores are streamed from <b>cdn.emulatorjs.org</b> the first time you boot each
+                system (needs internet once, then your browser caches them). <b>Your ROM files never leave this device</b> —
+                emulation runs 100% locally in WebAssembly. Only load games you legally own. This is the one NEXUS tab that
+                phones home for cores; everything else stays fully offline. 🔪
+            </div>
+
+            <div class="retro-grid">
+                <div class="retro-field">
+                    <label for="retroSystem">System / Core</label>
+                    <select id="retroSystem" class="retro-select">
+                        <option value="auto">🔍 Auto-detect from file</option>
+                        <option value="nes">Nintendo NES / Famicom</option>
+                        <option value="snes">Super Nintendo (SNES)</option>
+                        <option value="gb">Game Boy (GB)</option>
+                        <option value="gba">Game Boy Advance (GBA)</option>
+                        <option value="nds">Nintendo DS</option>
+                        <option value="n64">Nintendo 64</option>
+                        <option value="vb">Virtual Boy</option>
+                        <option value="segaMD">Sega Genesis / Mega Drive</option>
+                        <option value="segaMS">Sega Master System</option>
+                        <option value="segaGG">Sega Game Gear</option>
+                        <option value="segaCD">Sega CD</option>
+                        <option value="segaSaturn">Sega Saturn</option>
+                        <option value="pce">PC Engine / TurboGrafx-16</option>
+                        <option value="psx">Sony PlayStation</option>
+                        <option value="atari2600">Atari 2600</option>
+                        <option value="atari7800">Atari 7800</option>
+                        <option value="lynx">Atari Lynx</option>
+                        <option value="ngp">Neo Geo Pocket</option>
+                        <option value="ws">WonderSwan</option>
+                        <option value="coleco">ColecoVision</option>
+                        <option value="arcade">Arcade (FBNeo / MAME)</option>
+                    </select>
+                </div>
+                <div class="retro-field">
+                    <label for="retroRom">ROM / Disc Image</label>
+                    <input type="file" id="retroRom" class="retro-file"
+                        accept=".nes,.fds,.smc,.sfc,.fig,.gb,.gbc,.gba,.nds,.n64,.z64,.v64,.vb,.md,.gen,.smd,.sms,.gg,.pce,.bin,.cue,.iso,.chd,.pbp,.img,.a26,.a78,.lnx,.ngp,.ngc,.ws,.wsc,.col,.zip,.7z">
+                </div>
+                <button id="retroLoadBtn" class="retro-btn" disabled>▶ Insert Cartridge</button>
+            </div>
+
+            <div class="retro-drop" id="retroDrop">
+                🎮 <b>Drag &amp; drop a ROM here</b> — or use the file picker above.<br>
+                <span style="font-size:12px">Supports zipped ROMs too. System is auto-detected from the extension.</span>
+            </div>
+
+            <div class="retro-status" id="retroStatus"></div>
+
+            <div id="retroGameWrap"><div id="game"></div></div>
+
+            <div class="retro-sys-hint">
+                🕹️ <b>Controls:</b> EmulatorJS shows its own on-screen menu (bottom bar) for <b>save states, load states,
+                fullscreen, fast-forward, and virtual gamepad</b>. Physical USB/Bluetooth gamepads work automatically.
+                Keyboard defaults: <code>Arrows</code> = D-pad · <code>Z</code> = B · <code>X</code> = A · <code>Enter</code> = Start · <code>Shift</code> = Select.<br>
+                📁 <b>Auto-detect:</b> <code>.nes</code> NES · <code>.sfc/.smc</code> SNES · <code>.gb/.gbc</code> GB · <code>.gba</code> GBA ·
+                <code>.nds</code> DS · <code>.z64/.n64</code> N64 · <code>.md/.gen</code> Genesis · <code>.pce</code> TurboGrafx ·
+                <code>.bin/.cue/.chd</code> PlayStation · <code>.zip</code> Arcade.
             </div>
         </div>
     </div>
@@ -14246,7 +14345,7 @@
     document.addEventListener('keydown',e=>{
         if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){const active=document.querySelector('.tab.active')?.dataset.view;if(active==='data')convert();else if(active==='qr')document.getElementById('genBtn')?.click();e.preventDefault();}
         if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='c'){const active=document.querySelector('.tab.active')?.dataset.view;if(active==='data')document.getElementById('copyBtn')?.click();e.preventDefault();}
-        if((e.ctrlKey||e.metaKey)&&e.key>='1'&&e.key<='6'){const tabs=document.querySelectorAll('.tab');const i=+e.key-1;if(tabs[i]){tabs[i].click();e.preventDefault();}}
+        if((e.ctrlKey||e.metaKey)&&e.key>='1'&&e.key<='7'){const tabs=document.querySelectorAll('.tab');const i=+e.key-1;if(tabs[i]){tabs[i].click();e.preventDefault();}}
         if(e.altKey && !e.ctrlKey && !e.metaKey && e.key>='1' && e.key<='9'){const activeView=document.querySelector('.view.active');if(activeView){const subTabs=activeView.querySelectorAll('.sub-tab');const subIndex=+e.key-1;if(subTabs[subIndex]){subTabs[subIndex].click();e.preventDefault();}}}
     });
 
@@ -15866,6 +15965,136 @@
         };
         reader.readAsText(file);
     };
+
+    /* ===================== 🕹️ RETROARCH / EMULATORJS ===================== */
+    (function(){
+        const sysSel   = document.getElementById('retroSystem');
+        const romInput = document.getElementById('retroRom');
+        const loadBtn  = document.getElementById('retroLoadBtn');
+        const drop     = document.getElementById('retroDrop');
+        const status   = document.getElementById('retroStatus');
+        const gameWrap = document.getElementById('retroGameWrap');
+        if(!sysSel || !romInput || !loadBtn) return;
+
+        let pendingFile = null;
+        let booted = false;
+
+        // extension -> EmulatorJS core (libretro)
+        const EXT_CORE = {
+            nes:'nes', fds:'nes', unf:'nes',
+            smc:'snes', sfc:'snes', fig:'snes', swc:'snes', bs:'snes',
+            gb:'gb', dmg:'gb', gbc:'gb', sgb:'gb',
+            gba:'gba',
+            nds:'nds', dsi:'nds',
+            n64:'n64', z64:'n64', v64:'n64',
+            vb:'vb',
+            md:'segaMD', gen:'segaMD', smd:'segaMD', '32x':'segaMD',
+            sms:'segaMS', gg:'segaGG',
+            pce:'pce',
+            a26:'atari2600', a78:'atari7800', lnx:'lynx',
+            ngp:'ngp', ngc:'ngp',
+            ws:'ws', wsc:'ws',
+            col:'coleco',
+            // disc / single-file images
+            chd:'psx', pbp:'psx', ecm:'psx',
+            zip:'arcade', '7z':'arcade'
+        };
+        // ambiguous ones that depend on chosen system
+        const AMBIG = new Set(['bin','cue','iso','img']);
+
+        function ext(name){ return (name.split('.').pop()||'').toLowerCase(); }
+
+        function detectCore(file){
+            const manual = sysSel.value;
+            if(manual && manual !== 'auto') return manual;
+            const e = ext(file.name);
+            if(EXT_CORE[e]) return EXT_CORE[e];
+            if(AMBIG.has(e)) return null; // needs manual pick
+            return null;
+        }
+
+        function setStatus(msg, kind){
+            status.textContent = msg || '';
+            status.className = 'retro-status' + (kind ? ' '+kind : '');
+        }
+
+        function onFilePicked(file){
+            if(!file) return;
+            pendingFile = file;
+            romInput.files && (romInput.value !== undefined);
+            const pretty = file.name + '  ·  ' + (file.size/1048576).toFixed(2) + ' MB';
+            drop.innerHTML = '🎮 <b>' + pretty + '</b><br><span style="font-size:12px">Ready — pick a system (or leave on Auto-detect) and hit Insert Cartridge.</span>';
+            loadBtn.disabled = false;
+            const core = detectCore(file);
+            if(core){
+                setStatus('Detected core: ' + core.toUpperCase() + ' — press Insert Cartridge to boot.', 'ok');
+            } else {
+                setStatus('Could not auto-detect the system for ".'+ext(file.name)+'" — choose one from the dropdown.', 'err');
+            }
+        }
+
+        romInput.addEventListener('change', e => onFilePicked(e.target.files[0]));
+
+        // drag & drop
+        ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e=>{
+            e.preventDefault(); e.stopPropagation(); drop.classList.add('hot');
+        }));
+        ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e=>{
+            e.preventDefault(); e.stopPropagation(); drop.classList.remove('hot');
+        }));
+        drop.addEventListener('drop', e => {
+            const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if(f) onFilePicked(f);
+        });
+        drop.addEventListener('click', () => romInput.click());
+
+        function cleanup(){
+            // remove previously injected loader scripts
+            document.querySelectorAll('script[data-retro-loader]').forEach(s => s.remove());
+            // recreate the game container so EmulatorJS can re-init cleanly
+            gameWrap.innerHTML = '<div id="game"></div>';
+            // clear stale EmulatorJS globals
+            ['EJS_emulator','EJS_core','EJS_gameUrl','EJS_gameName','EJS_player',
+             'EJS_pathtodata','EJS_startOnLoaded','EJS_ready','EJS_onGameStart',
+             'EJS_terminateOnExit','EJS_gameID','EJS_language','EJS_Buttons',
+             'EJS_defaultControls','EJS_loadStateURL','EJS_cheats','EJS_gamePatchUrl',
+             'EJS_onLoadState','EJS_onSaveState'].forEach(k => { try{ delete window[k]; }catch(_){ window[k]=undefined; } });
+        }
+
+        loadBtn.addEventListener('click', () => {
+            if(!pendingFile){ setStatus('Pick a ROM file first.', 'err'); return; }
+            const core = detectCore(pendingFile);
+            if(!core){
+                setStatus('Choose the correct system from the dropdown for ".'+ext(pendingFile.name)+'" files, then try again.', 'err');
+                return;
+            }
+
+            // tear down any previous session
+            cleanup();
+
+            const blobUrl = URL.createObjectURL(pendingFile);
+
+            // EmulatorJS reads these globals when loader.js executes
+            window.EJS_player        = '#game';
+            window.EJS_core          = core;
+            window.EJS_gameUrl       = blobUrl;
+            window.EJS_gameName      = pendingFile.name;
+            window.EJS_pathtodata    = 'https://cdn.emulatorjs.org/stable/data/';
+            window.EJS_startOnLoaded = true;
+            window.EJS_terminateOnExit = false;
+            window.EJS_language      = 'en-US';
+
+            setStatus('⏳ Booting ' + core.toUpperCase() + ' core for "' + pendingFile.name + '" … (first boot of a system downloads the core)', '');
+
+            const s = document.createElement('script');
+            s.src = 'https://cdn.emulatorjs.org/stable/data/loader.js' + (booted ? ('?v='+Date.now()) : '');
+            s.dataset.retroLoader = '1';
+            s.onload  = () => { booted = true; setStatus('✔ Running ' + core.toUpperCase() + '. Use the on-screen bar for save states & fullscreen.', 'ok'); };
+            s.onerror = () => setStatus('✖ Failed to load the emulator core. Check your internet connection (cores come from cdn.emulatorjs.org).', 'err');
+            document.body.appendChild(s);
+        });
+    })();
+    /* =================== END RETROARCH / EMULATORJS ===================== */
 
 </script>
 

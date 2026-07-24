@@ -6,7 +6,7 @@ A futuristic, **100% offline**, single-file web app. No build steps, no accounts
 
 ---
 
-## ✨ The 6 Main Workstations
+## ✨ The 7 Main Workstations
 
 ### 1. ⇄ Data & Files
 - **Converter:** Convert text between **31 reversible encodings** (Binary, Base32/45/58/62/64, Z85, ROT ciphers, Morse, Leetspeak) with auto-detection and live stats.
@@ -41,6 +41,14 @@ A futuristic, **100% offline**, single-file web app. No build steps, no accounts
 - **Markdown Live Editor:** Side-by-side live Markdown rendering and editor.
 - **Wheel of Names:** Ticking spinning wheel with sound effects, victory confetti, winner popups, and exclusion modes.
 
+### 7. 🕹️ RetroArch
+- **Browser Emulator:** RetroArch in your browser — powered by [EmulatorJS](https://emulatorjs.org) running **libretro cores compiled to WebAssembly**. Import any ROM you own (drag-and-drop or file picker) and play instantly.
+- **30+ Systems:** NES, SNES, Game Boy / Color / Advance, Nintendo DS & 64, Virtual Boy, Sega Genesis / Master System / Game Gear / CD / Saturn, PC Engine / TurboGrafx-16, PlayStation, Atari 2600 / 7800 / Lynx, Neo Geo Pocket, WonderSwan, ColecoVision, and Arcade (FBNeo / MAME).
+- **Smart Auto-Detect:** Picks the correct core from your file's extension (`.nes`, `.sfc`, `.gba`, `.z64`, `.chd`, `.zip`, …) with a manual override dropdown.
+- **Full Emulator Features:** On-screen menu for save states, load states, fast-forward, fullscreen, and a virtual gamepad. Physical USB/Bluetooth gamepads and keyboard controls work out of the box.
+
+> 🔌 **Note:** Unlike the rest of NEXUS, the RetroArch tab streams emulator cores from `cdn.emulatorjs.org` on first boot of each system (cached afterward). **Your ROM files never leave your device** — all emulation runs 100% locally in WASM.
+
 ---
 
 ## 🚀 Usage
@@ -59,7 +67,7 @@ Download `index.html` and double-click it. Works fully offline, including the we
 ## ⌨️ Keyboard Shortcuts
 | Shortcut | Action |
 |---|---|
-| `Ctrl/Cmd + 1–6` | Switch Main Workstations |
+| `Ctrl/Cmd + 1–7` | Switch Main Workstations |
 | `Alt/Option + 1–9` | Filter sub-tools within the active workstation |
 | `Ctrl/Cmd + Enter` | Convert / Generate / Run |
 | `Ctrl/Cmd + Shift + C` | Copy primary output |
