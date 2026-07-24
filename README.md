@@ -45,7 +45,10 @@ A futuristic, **100% offline**, single-file web app. No build steps, no accounts
 - **Browser Emulator:** RetroArch in your browser — powered by [EmulatorJS](https://emulatorjs.org) running **libretro cores compiled to WebAssembly**. Import any ROM you own (drag-and-drop or file picker) and play instantly.
 - **30+ Systems:** NES, SNES, Game Boy / Color / Advance, Nintendo DS & 64, Virtual Boy, Sega Genesis / Master System / Game Gear / CD / Saturn, PC Engine / TurboGrafx-16, PlayStation, Atari 2600 / 7800 / Lynx, Neo Geo Pocket, WonderSwan, ColecoVision, and Arcade (FBNeo / MAME).
 - **Smart Auto-Detect:** Picks the correct core from your file's extension (`.nes`, `.sfc`, `.gba`, `.z64`, `.chd`, `.zip`, …) with a manual override dropdown.
-- **Full Emulator Features:** On-screen menu for save states, load states, fast-forward, fullscreen, and a virtual gamepad. Physical USB/Bluetooth gamepads and keyboard controls work out of the box.
+- **🔗 Joy-Con Auto-Combine:** Pair a left **and** right Nintendo Switch Joy-Con over Bluetooth and NEXUS **automatically fuses them into a single controller** (it transparently merges the browser's two separate gamepads into one standard pad). No more fiddly manual pairing — toggleable, with a live controller-detection status strip and optional debug readout.
+- **⛶ One-Tap Fullscreen:** A dedicated fullscreen button for distraction-free play.
+- **📱 Mobile Touch Controls:** On phones/tablets, **transparent on-screen controls** (D-pad, A/B/X/Y, L/R shoulders, Start/Select) appear automatically in fullscreen. Multi-touch ready and toggleable.
+- **Full Emulator Features:** On-screen menu for save states, load states, and fast-forward. Physical USB/Bluetooth gamepads and keyboard controls work out of the box.
 
 > 🔌 **Note:** Unlike the rest of NEXUS, the RetroArch tab streams emulator cores from `cdn.emulatorjs.org` on first boot of each system (cached afterward). **Your ROM files never leave your device** — all emulation runs 100% locally in WASM.
 
